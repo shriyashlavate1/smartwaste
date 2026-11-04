@@ -6,6 +6,7 @@ import { KineticText } from './components/KineticText'
 import { ScrollReveal } from './components/ScrollReveal'
 import { Marquee } from './components/Marquee'
 import { CountUp } from './components/CountUp'
+import { MotionToggle } from './components/MotionToggle'
 
 type Route = '/' | '/login' | '/dashboard' | '/identify' | '/impact' | '/learn'
 type IconName =
@@ -238,6 +239,7 @@ function LandingPage() {
           <a href="#impact" data-cursor="pointer">Impact</a>
         </nav>
         <div className="header-actions">
+          <MotionToggle />
           <button className="text-link" onClick={() => navigate('/login')} data-cursor="pointer">Log in <Icon name="arrowUpRight" size={15} /></button>
           <Button variant="dark" onClick={() => navigate('/login')}>Try the demo <Icon name="arrowUpRight" size={16} /></Button>
         </div>
@@ -437,7 +439,10 @@ function LoginPage({ onToast }: { onToast: (message: string) => void }) {
       <div className="login-panel">
         <div className="login-panel-top">
           <button className="back-link" onClick={() => navigate('/')} data-cursor="pointer"><Icon name="arrowRight" size={17} /> Back to home</button>
-          <span>New here? <button className="inline-action" onClick={() => onToast('Account creation is simulated in this demo.')} data-cursor="pointer">Create account</button></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <MotionToggle />
+            <span>New here? <button className="inline-action" onClick={() => onToast('Account creation is simulated in this demo.')} data-cursor="pointer">Create account</button></span>
+          </div>
         </div>
         <ScrollReveal animation="fade-up" delay={100} className="login-form-wrap">
           <Eyebrow>Demo access</Eyebrow>
@@ -525,6 +530,7 @@ function DashboardLayout({ active, children, onToast }: { active: Route; childre
           <button className="mobile-menu" onClick={() => onToast('Use the bottom navigation to move around the demo.')} aria-label="Open navigation" data-cursor="pointer"><Icon name="menu" size={21} /></button>
           <div className="topbar-breadcrumb"><span>WasteWise</span><Icon name="chevron" size={14} /><strong>{navItems.find((item) => item.href === active)?.label}</strong></div>
           <div className="topbar-actions">
+            <MotionToggle />
             <span className="demo-chip"><span /> DEMO MODE</span>
             <button className="icon-button" onClick={() => onToast('You are all caught up.')} aria-label="Notifications" data-cursor="pointer"><Icon name="bell" size={19} /></button>
             <button className="top-avatar" onClick={() => onToast('Profile settings are part of the demo shell.')} data-cursor="pointer">AS</button>

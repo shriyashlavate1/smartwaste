@@ -6,6 +6,15 @@
     <meta name="theme-color" content="#151712" />
     <meta name="description" content="WasteWise helps you make the right everyday sorting choice." />
     <title>WasteWise — Sort what matters</title>
+    <script>
+      (function() {
+        var q = new URLSearchParams(window.location.search);
+        var reduce = q.get('reduce') === '1' || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        if (reduce) {
+          document.documentElement.setAttribute('data-motion', 'reduced');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
