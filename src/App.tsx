@@ -209,21 +209,113 @@ function Eyebrow({ children, light = false }: { children: ReactNode; light?: boo
 }
 
 function SortGraphic({ compact = false }: { compact?: boolean }) {
+  const [activeLog, setActiveLog] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveLog((prev) => (prev + 1) % 4)
+    }, 2800)
+    return () => clearInterval(timer)
+  }, [])
+
+  const logItems = [
+    { item: 'PET Water Bottle', category: 'Recyclables', conf: '98.4%', co2: '+0.04kg', status: 'Diverted to Blue Bin' },
+    { item: 'Coffee Grounds', category: 'Compost', conf: '99.1%', co2: '+0.12kg', status: 'Organic Soil Blend' },
+    { item: 'Soiled Paper Wrap', category: 'General Waste', conf: '94.2%', co2: 'Controlled', status: 'Residual Processing' },
+    { item: 'Lithium AA Battery', category: 'Hazardous Waste', conf: '99.8%', co2: 'Safe Depot', status: 'Drop-off Routed' },
+  ]
+
+  const current = logItems[activeLog]
+
   return (
-    <div className={`sort-graphic ${compact ? 'sort-graphic-compact' : ''}`} aria-label="Illustration of waste moving through a sorting desk">
-      <div className="graphic-orbit orbit-one" />
-      <div className="graphic-orbit orbit-two" />
-      <div className="graphic-label label-top"><span>01</span> identify</div>
-      <div className="graphic-label label-side"><span>02</span> sort</div>
-      <div className="graphic-sheet" data-cursor="card" data-cursor-label="SORT">
-        <div className="sheet-top"><span className="sheet-kicker">WASTE / INDEX</span><span className="sheet-count">A—04</span></div>
-        <div className="sheet-object"><div className="bottle-shape"><i /><b /></div><div className="sheet-arrow"><Icon name="arrowRight" size={24} /></div><div className="bin-shape"><i /><b /></div></div>
-        <div className="sheet-caption"><strong>make the next<br />right choice</strong><span>one item at a time</span></div>
+    <div className={`sort-console ${compact ? 'sort-console-compact' : ''}`} aria-label="Interactive AI Waste Segregation Terminal">
+      <div className="console-ambient-glow" />
+
+      <div className="console-window" data-cursor="card" data-cursor-label="VISION HUD">
+        <div className="console-header">
+          <div className="console-dots">
+            <span className="dot dot-red" />
+            <span className="dot dot-yellow" />
+            <span className="dot dot-green" />
+          </div>
+          <div className="console-title">
+            <Icon name="scan" size={13} />
+            <span>wastewise-agent // vision-stream</span>
+          </div>
+          <div className="console-live-badge">
+            <span className="pulse-dot" />
+            LIVE INFERENCE
+          </div>
+        </div>
+
+        <div className="console-viewfinder">
+          <div className="viewfinder-grid" />
+          <div className="viewfinder-scanline" />
+          
+          <div className="reticle reticle-tl" />
+          <div className="reticle reticle-tr" />
+          <div className="reticle reticle-bl" />
+          <div className="reticle reticle-br" />
+
+          <div className="viewfinder-target">
+            <div className="target-box">
+              <div className="target-badge">
+                <Icon name="sparkle" size={11} />
+                <span>{current.item}</span>
+                <span className="target-conf">{current.conf}</span>
+              </div>
+              <div className="target-silhouette">
+                <Icon name={activeLog === 0 ? 'package' : activeLog === 1 ? 'leaf' : activeLog === 2 ? 'trash' : 'flame'} size={40} />
+              </div>
+            </div>
+          </div>
+
+          <div className="viewfinder-footer">
+            <div className="hud-metric">
+              <span className="metric-tag">LATENCY</span>
+              <strong>38ms</strong>
+            </div>
+            <div className="hud-metric">
+              <span className="metric-tag">ROUTED TO</span>
+              <strong className="text-lime">{current.category}</strong>
+            </div>
+            <div className="hud-metric">
+              <span className="metric-tag">OFFSET</span>
+              <strong className="text-mint">{current.co2}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="console-terminal">
+          <div className="terminal-bar">
+            <span className="term-prompt">$</span>
+            <span className="term-cmd">wastewise classify --stream --rules=municipal-v2</span>
+          </div>
+          <div className="terminal-lines">
+            <div className="term-line line-dim">
+              <span className="term-time">[00:01.04]</span>
+              <span className="term-msg">Ingested: Frame buffer #2048 (1080p RGB)</span>
+            </div>
+            <div className="term-line line-info">
+              <span className="term-time">[00:01.12]</span>
+              <span className="term-msg">Detected: <strong>{current.item}</strong> (Confidence: {current.conf})</span>
+            </div>
+            <div className="term-line line-success">
+              <span className="term-time">[00:01.18]</span>
+              <span className="term-msg">Action: <span className="term-tag">{current.category}</span> → {current.status}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="graphic-chip chip-lime"><Icon name="check" size={14} /> sorted</div>
-      <div className="graphic-chip chip-ink"><Icon name="recycle" size={14} /> circular</div>
-      <span className="graphic-spark spark-a"><Icon name="sparkle" size={15} /></span>
-      <span className="graphic-spark spark-b"><Icon name="sparkle" size={10} /></span>
+
+      <div className="console-chip chip-verified">
+        <Icon name="check" size={13} />
+        <span>Contamination Prevention</span>
+      </div>
+      <div className="console-chip chip-circular">
+        <Icon name="recycle" size={13} />
+        <span>Circular Economy Verified</span>
+      </div>
     </div>
   )
 }
@@ -239,16 +331,20 @@ function LandingPage() {
           <a href="#impact" data-cursor="pointer">Impact</a>
         </nav>
         <div className="header-actions">
+          <div className="header-status-badge">
+            <i />
+            <span>MODEL v2.4 ONLINE</span>
+          </div>
           <MotionToggle />
           <button className="text-link" onClick={() => navigate('/login')} data-cursor="pointer">Log in <Icon name="arrowUpRight" size={15} /></button>
-          <Button variant="dark" onClick={() => navigate('/login')}>Try the demo <Icon name="arrowUpRight" size={16} /></Button>
+          <Button variant="lime" onClick={() => navigate('/login')}>Try the demo <Icon name="arrowUpRight" size={16} /></Button>
         </div>
       </header>
 
       <section className="hero page-wrap">
         <div className="hero-copy">
           <ScrollReveal animation="fade-up" delay={50}>
-            <Eyebrow>Everyday infrastructure for a cleaner loop</Eyebrow>
+            <Eyebrow>AI Waste Recognition Platform v2.4</Eyebrow>
           </ScrollReveal>
           
           <h1 className="hero-title">
@@ -257,12 +353,12 @@ function LandingPage() {
           </h1>
 
           <ScrollReveal animation="fade-up" delay={280}>
-            <p className="hero-lede">WasteWise turns a small moment of uncertainty into a clear next step. Identify your item, find its place, and keep useful materials moving.</p>
+            <p className="hero-lede">WasteWise turns uncertainty into instant environmental action. Point, scan, and sort with AI precision—keeping useful materials in motion with zero guesswork.</p>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" delay={360}>
             <div className="hero-actions">
-              <Button variant="lime" onClick={() => navigate('/login')}>Find my bin <Icon name="arrowUpRight" size={17} /></Button>
+              <Button variant="lime" onClick={() => navigate('/login')}>Start sorting demo <Icon name="arrowUpRight" size={17} /></Button>
               <Magnetic strength={0.16}>
                 <button
                   className="play-link"
@@ -276,13 +372,39 @@ function LandingPage() {
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" delay={420}>
-            <div className="hero-note"><Icon name="sparkle" size={16} /><span>For homes, teams, and everyone in between.</span></div>
+            <div className="hero-note"><Icon name="sparkle" size={16} /><span>Trained for homes, enterprises, and smart circular facilities.</span></div>
           </ScrollReveal>
         </div>
 
         <ScrollReveal animation="zoom-in" delay={200} className="hero-visual">
           <SortGraphic />
         </ScrollReveal>
+      </section>
+
+      {/* Quicklive-inspired Telemetry Stats Strip */}
+      <section className="telemetry-strip page-wrap">
+        <div className="telemetry-grid">
+          <div className="telemetry-card">
+            <div className="telemetry-val"><CountUp to={142} suffix="K+" /></div>
+            <div className="telemetry-label">Items Classified</div>
+            <div className="telemetry-sub">Real-time inference across 4 streams</div>
+          </div>
+          <div className="telemetry-card">
+            <div className="telemetry-val">99.2%</div>
+            <div className="telemetry-label">Sorting Accuracy</div>
+            <div className="telemetry-sub">Municipal contamination prevention</div>
+          </div>
+          <div className="telemetry-card">
+            <div className="telemetry-val">&lt; 38ms</div>
+            <div className="telemetry-label">Inference Latency</div>
+            <div className="telemetry-sub">Edge camera & text recognition</div>
+          </div>
+          <div className="telemetry-card">
+            <div className="telemetry-val"><CountUp to={4820} suffix=" kg" /></div>
+            <div className="telemetry-label">CO₂ Equivalent Diverted</div>
+            <div className="telemetry-sub">Saved from landfill emissions</div>
+          </div>
+        </div>
       </section>
 
       {/* BDSN-Style Infinite Marquee Ticker */}

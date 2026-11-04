@@ -30,6 +30,12 @@ export function ScrollReveal({
     const el = ref.current
     if (!el) return
 
+    // Immediately reveal if already within viewport on mount
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setIsRevealed(true)
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -39,7 +45,7 @@ export function ScrollReveal({
       },
       {
         threshold,
-        rootMargin: '0px 0px -20px 0px',
+        rootMargin: '20px 0px 20px 0px',
       }
     )
 

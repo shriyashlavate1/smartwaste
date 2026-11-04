@@ -22,6 +22,12 @@ export function KineticText({
     const el = ref.current
     if (!el) return
 
+    // Immediately reveal if already within viewport on mount
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setIsRevealed(true)
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
