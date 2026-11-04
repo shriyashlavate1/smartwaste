@@ -148,6 +148,8 @@ const activity = [
   { day: 'Mon, 04 Mar', item: 'Takeaway lid', bin: 'General Waste', time: '12:06 PM', icon: 'trash' as IconName, color: 'peach' },
 ]
 
+const straightenedLearnCards = new Set<string>()
+
 const navItems: { href: Route; label: string; icon: IconName }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'layout' },
   { href: '/identify', label: 'Identify Waste', icon: 'scan' },
@@ -1173,24 +1175,47 @@ function IdentifyPage({
   const [selected, setSelected] = useState(wasteCatalog[0])
   const [uploadedName, setUploadedName] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
+  const [pendingImage, setPendingImage] = useState<File | null>(null)
+  const [imageConfirmed, setImageConfirmed] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const cameraRef = useRef<HTMLInputElement | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
+  useEffect(() => {
+    if (!cameraStream) return
+    if (videoRef.current) videoRef.current.srcObject = cameraStream
+    return () => cameraStream.getTracks().forEach((track) => track.stop())
+  }, [cameraStream])
 
   function identify() {
     const found = wasteCatalog.find((item) => `${item.name} ${item.bin}`.toLowerCase().includes(query.toLowerCase()))
     if (found) {
       setSelected(found)
-      setUploadedName('')
-      setPreviewUrl('')
+      clearUploadedImage()
     } else onToast('Item not found. Try one of the common sample items below.')
   }
 
-  function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+  function processImageFile(file: File) {
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      onToast('Please choose a JPG or PNG image.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      onToast('Please choose an image smaller than 10MB.')
+      return
+    }
+
     setUploadedName(file.name)
     setPreviewUrl(URL.createObjectURL(file))
+    setPendingImage(file)
+    setImageConfirmed(false)
+  }
+
+  function confirmImageUpload() {
+    if (!pendingImage) return
+    const file = pendingImage
     setSelected({
       ...wasteCatalog[0],
       name: file.name.replace(/\.[^/.]+$/, ''),
@@ -1199,7 +1224,70 @@ function IdentifyPage({
       description: 'Identified based on packaging material standards. Follow standard recycling procedures.',
       tip: 'Ensure the container is empty, rinsed, and dry before placing in the blue bin.'
     })
+    setPendingImage(null)
+    setImageConfirmed(true)
     onToast('Image uploaded and analyzed successfully.')
+  }
+
+  function clearUploadedImage() {
+    setUploadedName('')
+    setPreviewUrl('')
+    setPendingImage(null)
+    setImageConfirmed(false)
+  }
+
+  function removeUploadedImage() {
+    if (imageConfirmed) setSelected(wasteCatalog[0])
+    clearUploadedImage()
+  }
+
+  function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.currentTarget.value = ''
+    if (file) processImageFile(file)
+  }
+
+  async function openCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      cameraRef.current?.click()
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      setCameraStream(stream)
+    } catch {
+      onToast('Camera access was blocked. Allow camera permission or upload an image instead.')
+    }
+  }
+
+  function captureCameraImage() {
+    const video = videoRef.current
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      onToast('Camera is still starting. Please try again in a moment.')
+      return
+    }
+
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const context = canvas.getContext('2d')
+    if (!context) {
+      onToast('The camera image could not be captured. Please try again.')
+      return
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        onToast('The camera image could not be captured. Please try again.')
+        return
+      }
+      processImageFile(new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' }))
+      setCameraStream(null)
+    }, 'image/jpeg', 0.92)
   }
 
   return (
@@ -1234,7 +1322,7 @@ function IdentifyPage({
                     <button
                       className={selected.name === item.name ? 'selected' : ''}
                       key={item.name}
-                      onClick={() => { setQuery(item.shortName); setSelected(item); setUploadedName(''); setPreviewUrl('') }}
+                      onClick={() => { setQuery(item.shortName); setSelected(item); clearUploadedImage() }}
                       data-cursor="pointer"
                     >
                       <span className={`sample-dot dot-${item.accent}`}><Icon name={item.icon} size={15} /></span>
@@ -1246,21 +1334,50 @@ function IdentifyPage({
               </div>
               <div className="upload-divider"><span>or capture / upload an image</span></div>
               <div className="upload-actions">
-                <TiltCard as="button" maxTilt={6} className="upload-card" onClick={() => fileRef.current?.click()} data-cursor="pointer">
-                  <span className="upload-preview">
-                    {previewUrl ? <img src={previewUrl} alt="Uploaded sample preview" /> : <span className="upload-icon"><Icon name="upload" size={20} /></span>}
-                  </span>
-                  <span>
-                    <strong>{uploadedName || 'Upload an image'}</strong>
-                    <small>{uploadedName ? 'Image loaded · tap to replace' : 'JPG or PNG · up to 10MB'}</small>
-                  </span>
-                  <Icon name="arrowUpRight" size={16} />
-                </TiltCard>
-                <TiltCard as="button" maxTilt={6} className="camera-card" onClick={() => { setSelected(wasteCatalog[0]); setUploadedName('camera-capture.jpg'); setPreviewUrl(''); onToast('Camera frame captured and analyzed.') }} data-cursor="pointer">
+                <div className="upload-card-wrap">
+                  <TiltCard as="button" maxTilt={6} className={`upload-card${uploadedName ? ' has-upload' : ''}`} onClick={() => fileRef.current?.click()} data-cursor="pointer">
+                    <span className="upload-preview">
+                      {previewUrl ? <img src={previewUrl} alt="Uploaded sample preview" /> : <span className="upload-icon"><Icon name="upload" size={20} /></span>}
+                    </span>
+                    <span>
+                      <strong>{uploadedName || 'Upload an image'}</strong>
+                      <small>{uploadedName ? (imageConfirmed ? 'Image uploaded · tap to replace' : 'Ready to upload · tap to replace') : 'JPG or PNG · up to 10MB'}</small>
+                    </span>
+                    {!uploadedName && <Icon name="arrowUpRight" size={16} />}
+                  </TiltCard>
+                  {uploadedName && (
+                    <div className="upload-image-actions">
+                      {!imageConfirmed && (
+                        <button
+                          className="upload-confirm"
+                          type="button"
+                          onClick={confirmImageUpload}
+                          aria-label="Confirm and upload image"
+                          title="Upload image"
+                          data-cursor="pointer"
+                        >
+                          <Icon name="check" size={15} />
+                        </button>
+                      )}
+                      <button
+                        className="upload-remove"
+                        type="button"
+                        onClick={removeUploadedImage}
+                        aria-label="Remove uploaded image"
+                        title="Remove image"
+                        data-cursor="pointer"
+                      >
+                        <Icon name="x" size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <TiltCard as="button" maxTilt={6} className="camera-card" onClick={openCamera} data-cursor="pointer">
                   <Icon name="camera" size={22} />
                   <span>Use camera</span>
                 </TiltCard>
                 <input ref={fileRef} type="file" accept="image/png,image/jpeg" onChange={chooseFile} hidden />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={chooseFile} hidden />
               </div>
             </TiltCard>
           </ScrollReveal>
@@ -1277,6 +1394,24 @@ function IdentifyPage({
             </div>
           </ScrollReveal>
         </div>
+
+        {cameraStream && (
+          <div className="camera-dialog-backdrop">
+            <section className="camera-dialog" role="dialog" aria-modal="true" aria-labelledby="camera-dialog-title">
+              <div className="camera-dialog-header">
+                <h2 id="camera-dialog-title">Take a photo</h2>
+                <button type="button" onClick={() => setCameraStream(null)} aria-label="Close camera" data-cursor="pointer">
+                  <Icon name="x" size={18} />
+                </button>
+              </div>
+              <video ref={videoRef} autoPlay muted playsInline aria-label="Camera preview" />
+              <div className="camera-dialog-actions">
+                <Button variant="outline" onClick={() => setCameraStream(null)}>Cancel</Button>
+                <Button variant="lime" onClick={captureCameraImage}><Icon name="camera" size={17} /> Capture photo</Button>
+              </div>
+            </section>
+          </div>
+        )}
 
         <ScrollReveal animation="fade-up" className="identify-why">
           <div><Eyebrow>Why it helps</Eyebrow><h2>Good sorting is<br /><em>mostly context.</em></h2></div>
@@ -1304,6 +1439,15 @@ function ImpactPage({
   onLogout: () => void
 }) {
   const [period, setPeriod] = useState('This week')
+  const isMonthly = period === 'This month'
+  const chartData = isMonthly
+    ? [['W1', 9], ['W2', 12], ['W3', 10], ['W4', 15]]
+    : [['M', 2], ['T', 4], ['W', 3], ['T', 6], ['F', 5], ['S', 8], ['S', 4]]
+  const chartMaximum = isMonthly ? 16 : 8
+  const sortedItems = isMonthly ? 46 : 12
+  const loopItems = isMonthly ? 31 : 8
+  const progress = isMonthly ? 77 : 80
+
   return (
     <DashboardLayout
       active="/impact"
@@ -1319,21 +1463,35 @@ function ImpactPage({
           title="Small moves,"
           emphasis="visible rhythm."
           description="A clear snapshot of your sorting habits, material recovery, and carbon reduction."
-          action={<button className="period-select" onClick={() => setPeriod(period === 'This week' ? 'This month' : 'This week')} data-cursor="pointer">{period}<Icon name="chevron" size={15} /></button>}
+          action={
+            <label className="period-select-wrap">
+              <select
+                className="period-select"
+                aria-label="Select impact reporting period"
+                value={period}
+                onChange={(event) => setPeriod(event.currentTarget.value)}
+                data-cursor="pointer"
+              >
+                <option>This week</option>
+                <option>This month</option>
+              </select>
+              <Icon name="chevron" size={15} />
+            </label>
+          }
         />
 
         <ScrollReveal cascade animation="fade-up" className="impact-stats">
           <TiltCard as="div" maxTilt={6} className="impact-stat stat-lime" data-cursor="card" data-cursor-label="METRIC">
             <span className="stat-icon"><Icon name="recycle" size={20} /></span>
             <span className="section-label">ITEMS SORTED</span>
-            <strong><CountUp to={12} /></strong>
-            <small>+18% vs last week</small>
+            <strong><CountUp key={`${period}-sorted`} to={sortedItems} /></strong>
+            <small>{isMonthly ? '+18% vs last month' : '+18% vs last week'}</small>
           </TiltCard>
 
           <TiltCard as="div" maxTilt={6} className="impact-stat stat-mint" data-cursor="card" data-cursor-label="METRIC">
             <span className="stat-icon"><Icon name="sprout" size={20} /></span>
             <span className="section-label">KEPT IN THE LOOP</span>
-            <strong><CountUp to={8} /></strong>
+            <strong><CountUp key={`${period}-loop`} to={loopItems} /></strong>
             <small>recyclables + compost</small>
           </TiltCard>
 
@@ -1348,23 +1506,25 @@ function ImpactPage({
         <ScrollReveal animation="fade-up" delay={120}>
           <TiltCard as="div" maxTilt={4} className="impact-chart-card">
             <div className="card-heading">
-              <div><span className="section-label">SORTING PACE</span><h2>Your week, at a glance</h2></div>
+              <div><span className="section-label">SORTING PACE</span><h2>Your {isMonthly ? 'month' : 'week'}, at a glance</h2></div>
               <span className="chart-legend"><i /> items sorted</span>
             </div>
             <div className="large-chart">
-              <div className="chart-y"><span>8</span><span>6</span><span>4</span><span>2</span><span>0</span></div>
+              <div className="chart-y">
+                {(isMonthly ? [16, 12, 8, 4, 0] : [8, 6, 4, 2, 0]).map((value) => <span key={value}>{value}</span>)}
+              </div>
               <div className="chart-bars">
-                {[['M', 2], ['T', 4], ['W', 3], ['T', 6], ['F', 5], ['S', 8], ['S', 4]].map(([day, value], index) => (
-                  <div className={index === 5 ? 'chart-bar-col today' : 'chart-bar-col'} key={`${day}-${index}`}>
-                    <div className="bar-shell"><i style={{ height: `${Number(value) * 11}%` }} /></div>
-                    <span>{day}</span>
+                {chartData.map(([label, value], index) => (
+                  <div className={index === (isMonthly ? chartData.length - 1 : 5) ? 'chart-bar-col today' : 'chart-bar-col'} key={`${label}-${index}`}>
+                    <div className="bar-shell"><i style={{ height: `${Number(value) / chartMaximum * 88}%` }} /></div>
+                    <span>{label}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="chart-foot">
-              <span><Icon name="target" size={15} /> Goal: 15 items this week</span>
-              <strong><CountUp to={80} suffix="% there" /></strong>
+              <span><Icon name="target" size={15} /> Goal: {isMonthly ? '60 items this month' : '15 items this week'}</span>
+              <strong><CountUp key={`${period}-progress`} to={progress} suffix="% there" /></strong>
             </div>
           </TiltCard>
         </ScrollReveal>
@@ -1402,6 +1562,14 @@ function LearnPage({
   onToggleSidebar: () => void
   onLogout: () => void
 }) {
+  const [straightenedCards, setStraightenedCards] = useState(() => new Set(straightenedLearnCards))
+
+  function straightenCard(card: string) {
+    if (straightenedLearnCards.has(card)) return
+    straightenedLearnCards.add(card)
+    setStraightenedCards(new Set(straightenedLearnCards))
+  }
+
   const lessons = [
     { number: '01', title: 'The clean + dry rule', text: 'A quick rinse and a shake can be the difference between a useful material and general waste.', icon: 'droplet' as IconName, color: 'mint' },
     { number: '02', title: 'When in doubt, leave it out', text: 'One confusing item can contaminate a whole recycling stream. Check before you toss.', icon: 'shield' as IconName, color: 'lilac' },
@@ -1438,20 +1606,26 @@ function LearnPage({
 
           <ScrollReveal animation="fade-left" delay={120} className="material-stack">
             <div className="stack-label">MATERIAL / CONDITION</div>
-            <TiltCard maxTilt={10} className="stack-card stack-top" data-cursor="card" data-cursor-label="PAPER">
+            <TiltCard maxTilt={0} scale={1} className="stack-card stack-top" style={straightenedCards.has('paper') ? { rotate: '0deg' } : undefined} onMouseEnter={() => straightenCard('paper')} data-cursor="card" data-cursor-label="PAPER">
               <span className="stack-icon"><Icon name="package" size={22} /></span>
-              <strong>paper cup</strong>
-              <small>looks recyclable</small>
+              <span className="stack-copy">
+                <strong>paper cup</strong>
+                <small>looks recyclable</small>
+              </span>
             </TiltCard>
-            <TiltCard maxTilt={10} className="stack-card stack-middle" data-cursor="card" data-cursor-label="LINED">
+            <TiltCard maxTilt={0} scale={1} className="stack-card stack-middle" style={straightenedCards.has('lined') ? { rotate: '0deg' } : undefined} onMouseEnter={() => straightenCard('lined')} data-cursor="card" data-cursor-label="LINED">
               <span className="stack-icon"><Icon name="droplet" size={22} /></span>
-              <strong>lined + wet</strong>
-              <small>condition changes the answer</small>
+              <span className="stack-copy">
+                <strong>lined + wet</strong>
+                <small>condition changes the answer</small>
+              </span>
             </TiltCard>
-            <TiltCard maxTilt={10} className="stack-card stack-bottom" data-cursor="card" data-cursor-label="LOCAL">
+            <TiltCard maxTilt={0} scale={1} className="stack-card stack-bottom" style={straightenedCards.has('local') ? { rotate: '0deg' } : undefined} onMouseEnter={() => straightenCard('local')} data-cursor="card" data-cursor-label="LOCAL">
               <span className="stack-icon"><Icon name="info" size={22} /></span>
-              <strong>check local guidance</strong>
-              <small>context completes the picture</small>
+              <span className="stack-copy">
+                <strong>check local guidance</strong>
+                <small>context completes the picture</small>
+              </span>
             </TiltCard>
           </ScrollReveal>
         </section>
