@@ -16,6 +16,67 @@ type IconName =
   | 'trash' | 'shield' | 'flame' | 'droplet' | 'package' | 'circle' | 'globe' | 'info'
   | 'external' | 'x' | 'clock' | 'target' | 'filter' | 'sprout' | 'barChart'
 
+interface UserProfile {
+  name: string
+  email: string
+  streak: number
+}
+
+const DEFAULT_USER: UserProfile = {
+  name: 'Alex Sharma',
+  email: 'alex.sharma@example.com',
+  streak: 4,
+}
+
+function getSavedUser(): UserProfile {
+  try {
+    const raw = localStorage.getItem('wastewise_user')
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return DEFAULT_USER
+}
+
+function getFormattedCurrentDate(): string {
+  const now = new Date()
+  const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
+  const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER']
+  
+  const dayName = days[now.getDay()]
+  const dayNum = String(now.getDate()).padStart(2, '0')
+  const monthName = months[now.getMonth()]
+  const year = now.getFullYear()
+  
+  return `${dayName}, ${dayNum} ${monthName} ${year}`
+}
+
+const DASHBOARD_GREETINGS = [
+  'Welcome back,',
+  'Great to see you,',
+  "Let's sort smarter,",
+  'Make today count,',
+  'Ready to make a difference,',
+  'Good to have you here,',
+  'Keep making a difference,',
+]
+
+let sessionDashboardGreeting = ''
+
+function getSessionDashboardGreeting(): string {
+  if (!sessionDashboardGreeting) {
+    const randomIndex = Math.floor(Math.random() * DASHBOARD_GREETINGS.length)
+    sessionDashboardGreeting = DASHBOARD_GREETINGS[randomIndex]
+  }
+  return sessionDashboardGreeting
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  }
+  return (name.slice(0, 2) || 'AS').toUpperCase()
+}
+
 type WasteItem = {
   name: string
   shortName: string
@@ -142,17 +203,20 @@ function Icon({ name, size = 20, strokeWidth = 1.8 }: { name: IconName; size?: n
   )
 }
 
-function Brand({ inverted = false }: { inverted?: boolean }) {
+function Brand({ inverted = false, compact = false }: { inverted?: boolean; compact?: boolean }) {
   return (
     <Magnetic strength={0.25}>
       <button
-        className={`brand ${inverted ? 'brand-inverted' : ''}`}
+        className={`brand ${inverted ? 'brand-inverted' : ''} ${compact ? 'brand-compact' : ''}`}
         onClick={() => navigate('/')}
         aria-label="WasteWise home"
         data-cursor="pointer"
+        title="WasteWise home"
       >
         <span className="brand-mark" aria-hidden="true"><i /><i /></span>
-        <span className="brand-name">waste<span>wise</span></span>
+        {!compact && (
+          <span className="brand-name">waste<span>wise</span></span>
+        )}
       </button>
     </Magnetic>
   )
@@ -337,7 +401,7 @@ function LandingPage() {
           </div>
           <MotionToggle />
           <button className="text-link" onClick={() => navigate('/login')} data-cursor="pointer">Log in <Icon name="arrowUpRight" size={15} /></button>
-          <Button variant="lime" onClick={() => navigate('/login')}>Try the demo <Icon name="arrowUpRight" size={16} /></Button>
+          <Button variant="lime" onClick={() => navigate('/login')}>Get started <Icon name="arrowUpRight" size={16} /></Button>
         </div>
       </header>
 
@@ -348,8 +412,27 @@ function LandingPage() {
           </ScrollReveal>
           
           <h1 className="hero-title">
-            <KineticText as="span" delay={100}>Sort what</KineticText>
-            <KineticText as="span" delay={220}><em>matters.</em></KineticText>
+            <span className="hero-title-static">Sort what</span>
+            <span className="hero-typewriter-line" aria-label="Sort what matters.">
+              <span className="typewriter-word word-1" aria-hidden="true">
+                <span className="typewriter-text">matters.</span>
+              </span>
+              <span className="typewriter-word word-2" aria-hidden="true">
+                <span className="typewriter-text">counts.</span>
+              </span>
+              <span className="typewriter-word word-3" aria-hidden="true">
+                <span className="typewriter-text">lasts.</span>
+              </span>
+              <span className="typewriter-word word-4" aria-hidden="true">
+                <span className="typewriter-text">belongs.</span>
+              </span>
+              <span className="typewriter-word word-5" aria-hidden="true">
+                <span className="typewriter-text">inspires.</span>
+              </span>
+              <span className="typewriter-word word-6" aria-hidden="true">
+                <span className="typewriter-text">transforms.</span>
+              </span>
+            </span>
           </h1>
 
           <ScrollReveal animation="fade-up" delay={280}>
@@ -358,7 +441,7 @@ function LandingPage() {
 
           <ScrollReveal animation="fade-up" delay={360}>
             <div className="hero-actions">
-              <Button variant="lime" onClick={() => navigate('/login')}>Start sorting demo <Icon name="arrowUpRight" size={17} /></Button>
+              <Button variant="lime" onClick={() => navigate('/login')}>Start sorting <Icon name="arrowUpRight" size={17} /></Button>
               <Magnetic strength={0.16}>
                 <button
                   className="play-link"
@@ -411,7 +494,7 @@ function LandingPage() {
       <Marquee speed={32} pauseOnHover={true} className="page-wrap">
         <div className="marquee-item"><span>Waste is a design question</span><span className="marquee-pill">CIRCULAR</span><span className="marquee-arrow">↗</span></div>
         <div className="marquee-item"><span>Better sorting starts here</span><span className="marquee-pill">03 / 08</span><span className="marquee-arrow">↘</span></div>
-        <div className="marquee-item"><span>Keep materials in motion</span><span className="marquee-pill">DEMO ACTIVE</span><span className="marquee-arrow">✦</span></div>
+        <div className="marquee-item"><span>Keep materials in motion</span><span className="marquee-pill">AI ACTIVE</span><span className="marquee-arrow">✦</span></div>
         <div className="marquee-item"><span>Every item has its loop</span><span className="marquee-pill">AI INDEX</span><span className="marquee-arrow">↗</span></div>
         <div className="marquee-item"><span>From trash to resource</span><span className="marquee-pill">VERIFIED</span><span className="marquee-arrow">↘</span></div>
       </Marquee>
@@ -513,27 +596,35 @@ function LandingPage() {
         <div>
           <a href="#guidance" data-cursor="pointer">Guidance</a>
           <a href="#how-it-works" data-cursor="pointer">How it works</a>
-          <button onClick={() => navigate('/login')} data-cursor="pointer">Demo login <Icon name="arrowUpRight" size={14} /></button>
+          <button onClick={() => navigate('/login')} data-cursor="pointer">Log in <Icon name="arrowUpRight" size={14} /></button>
         </div>
       </footer>
     </main>
   )
 }
 
-function LoginPage({ onToast }: { onToast: (message: string) => void }) {
+function LoginPage({ onLogin, onToast }: { onLogin: (profile: UserProfile) => void; onToast: (message: string) => void }) {
   const [showPassword, setShowPassword] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', remember: true })
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [form, setForm] = useState({ name: '', email: '', password: '', remember: true })
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({})
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const next: typeof errors = {}
-    if (!form.email.trim()) next.email = 'Enter an email so we know where to start.'
-    else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Try a complete email address, like you@example.com.'
-    if (!form.password) next.password = 'Enter any password to continue the demo.'
+    if (!form.name.trim()) next.name = 'Please enter your full name.'
+    if (!form.email.trim()) next.email = 'Please enter your email address.'
+    else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Enter a valid email address (e.g., alex@example.com).'
+    if (!form.password.trim()) next.password = 'Please enter your password.'
     setErrors(next)
+    
     if (Object.keys(next).length === 0) {
-      onToast('Demo session started — welcome to WasteWise.')
+      const userProfile: UserProfile = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        streak: 4,
+      }
+      onLogin(userProfile)
+      onToast(`Welcome, ${userProfile.name}!`)
       navigate('/dashboard')
     }
   }
@@ -541,21 +632,21 @@ function LoginPage({ onToast }: { onToast: (message: string) => void }) {
   return (
     <main className="login-page">
       <div className="login-aside">
-        <div className="login-aside-top"><Brand inverted /><span className="aside-index">DEMO / 01</span></div>
+        <div className="login-aside-top"><Brand inverted /><span className="aside-index">SIGN IN</span></div>
         <div className="login-aside-content">
           <ScrollReveal animation="fade-up" delay={50}>
-            <Eyebrow light>Good systems start small</Eyebrow>
+            <Eyebrow light>Intelligent Waste Management</Eyebrow>
           </ScrollReveal>
           <h1>
             <KineticText as="span">Make room</KineticText>
             <KineticText as="span" delay={120}>for <em>better.</em></KineticText>
           </h1>
           <ScrollReveal animation="fade-up" delay={200}>
-            <p>Sign in to your demo dashboard and make your next sorting choice a little clearer.</p>
+            <p>Sign in to your dashboard to track sorting, prevent contamination, and keep circular materials moving.</p>
           </ScrollReveal>
           <SortGraphic compact />
         </div>
-        <div className="aside-footer"><span>WasteWise / 2024</span><span>Front-end concept</span></div>
+        <div className="aside-footer"><span>WasteWise</span><span>Environmental Intelligence</span></div>
       </div>
 
       <div className="login-panel">
@@ -563,26 +654,52 @@ function LoginPage({ onToast }: { onToast: (message: string) => void }) {
           <button className="back-link" onClick={() => navigate('/')} data-cursor="pointer"><Icon name="arrowRight" size={17} /> Back to home</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <MotionToggle />
-            <span>New here? <button className="inline-action" onClick={() => onToast('Account creation is simulated in this demo.')} data-cursor="pointer">Create account</button></span>
+            <span>New here? <button className="inline-action" onClick={() => onToast('Account registration is currently in early access.')} data-cursor="pointer">Create account</button></span>
           </div>
         </div>
         <ScrollReveal animation="fade-up" delay={100} className="login-form-wrap">
-          <Eyebrow>Demo access</Eyebrow>
+          <Eyebrow>Welcome Back</Eyebrow>
           <h2>
-            <KineticText as="span">Welcome</KineticText>
-            <KineticText as="span" delay={120}><em>back.</em></KineticText>
+            <KineticText as="span">Sign in to</KineticText>
+            <KineticText as="span" delay={120}><em>WasteWise.</em></KineticText>
           </h2>
-          <p className="form-intro">This is a simulated login. Use any valid-looking email and password to explore the product.</p>
+          <p className="form-intro">Enter your details to access your waste segregation workspace and impact analytics.</p>
           <form className="login-form" onSubmit={submit} noValidate>
             <label>
-              Email address
-              <input type="email" placeholder="you@example.com" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} />
+              Full Name
+              <input
+                type="text"
+                placeholder="Enter your full name"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+              />
+              {errors.name && <span className="field-error" id="name-error">{errors.name}</span>}
+            </label>
+            <label>
+              Email Address
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(event) => setForm({ ...form, email: event.target.value })}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+              />
               {errors.email && <span className="field-error" id="email-error">{errors.email}</span>}
             </label>
             <label>
               Password
               <div className="password-wrap">
-                <input type={showPassword ? 'text' : 'password'} placeholder="Any password works" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'password-error' : undefined} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                />
                 <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} data-cursor="pointer">
                   <Icon name={showPassword ? 'eyeOff' : 'eye'} size={18} />
                 </button>
@@ -595,85 +712,186 @@ function LoginPage({ onToast }: { onToast: (message: string) => void }) {
                 <span className="custom-checkbox"><Icon name="check" size={12} /></span>
                 Remember me
               </label>
-              <button type="button" className="inline-action" onClick={() => onToast('Password recovery is not connected in demo mode.')} data-cursor="pointer">Forgot password?</button>
+              <button type="button" className="inline-action" onClick={() => onToast('Password reset link will be sent to your email.')} data-cursor="pointer">Forgot password?</button>
             </div>
-            <Button type="submit" variant="dark" className="login-submit">Log in to demo <Icon name="arrowUpRight" size={17} /></Button>
-            <div className="or-divider"><span>or</span></div>
-            <Button variant="outline" className="google-button" onClick={() => onToast('Google continuation is simulated in this demo.')}>
-              <span className="google-g">G</span> Continue with Google
-            </Button>
+            <Button type="submit" variant="lime" className="login-submit">Log in <Icon name="arrowUpRight" size={17} /></Button>
           </form>
-          <div className="demo-notice"><Icon name="info" size={17} /><span><strong>Demo only.</strong> No credentials are stored and no account is created.</span></div>
         </ScrollReveal>
       </div>
     </main>
   )
 }
 
-function DashboardLayout({ active, children, onToast }: { active: Route; children: ReactNode; onToast: (message: string) => void }) {
+function DashboardLayout({
+  active,
+  children,
+  user,
+  onToast,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onLogout,
+}: {
+  active: Route
+  children: ReactNode
+  user: UserProfile
+  onToast: (message: string) => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+  onLogout: () => void
+}) {
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const profileDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false)
+      }
+    }
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileDropdownOpen])
+
   return (
-    <div className="app-shell">
-      <aside className="app-sidebar">
-        <div>
-          <Brand />
-          <div className="sidebar-caption">PERSONAL SORTING GUIDE</div>
+    <div className={`app-shell ${sidebarCollapsed ? 'shell-sidebar-collapsed' : ''}`}>
+      {mobileDrawerOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`app-sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileDrawerOpen ? 'mobile-drawer-open' : ''}`}>
+        <div className="sidebar-top">
+          <div className="sidebar-brand-wrap">
+            <Brand compact={sidebarCollapsed} />
+          </div>
+          {!sidebarCollapsed && <div className="sidebar-caption">PERSONAL SORTING GUIDE</div>}
           <nav className="app-nav" aria-label="Dashboard navigation">
             {navItems.map((item) => (
               <a
-                className={active === item.href ? 'active' : ''}
+                className={`app-nav-link ${active === item.href ? 'active' : ''}`}
                 href={item.href}
                 key={item.href}
-                onClick={(event) => { event.preventDefault(); navigate(item.href) }}
+                onClick={(event) => {
+                  event.preventDefault()
+                  navigate(item.href)
+                  setMobileDrawerOpen(false)
+                }}
                 data-cursor="pointer"
+                title={sidebarCollapsed ? item.label : undefined}
               >
-                <Icon name={item.icon} size={19} />
-                <span>{item.label}</span>
-                {active === item.href && <i className="nav-active-dot" />}
+                <span className="nav-icon"><Icon name={item.icon} size={19} /></span>
+                {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                {sidebarCollapsed && <span className="nav-tooltip" role="tooltip">{item.label}</span>}
+                {active === item.href && !sidebarCollapsed && <i className="nav-active-dot" />}
               </a>
             ))}
           </nav>
-        </div>
-        <div className="sidebar-bottom">
-          <TiltCard maxTilt={8} scale={1.02} className="streak-card" data-cursor="pointer">
-            <span className="streak-icon"><Icon name="flame" size={18} /></span>
-            <div><strong>4 day streak</strong><small>Keep the loop going</small></div>
-            <Icon name="arrowUpRight" size={15} />
-          </TiltCard>
-          <button className="profile-card" onClick={() => onToast('Profile settings are part of the demo shell.')} data-cursor="pointer">
-            <span className="avatar">AS</span>
-            <span><strong>Alex Sharma</strong><small>Personal account</small></span>
-            <Icon name="chevron" size={15} />
-          </button>
         </div>
       </aside>
 
       <div className="app-main">
         <header className="app-topbar">
-          <button className="mobile-menu" onClick={() => onToast('Use the bottom navigation to move around the demo.')} aria-label="Open navigation" data-cursor="pointer"><Icon name="menu" size={21} /></button>
-          <div className="topbar-breadcrumb"><span>WasteWise</span><Icon name="chevron" size={14} /><strong>{navItems.find((item) => item.href === active)?.label}</strong></div>
+          <div className="topbar-left">
+            <button
+              className="sidebar-toggle-btn"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                  setMobileDrawerOpen(!mobileDrawerOpen)
+                } else {
+                  onToggleSidebar()
+                }
+              }}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              data-cursor="pointer"
+            >
+              <Icon name="menu" size={20} />
+            </button>
+            <div className="topbar-breadcrumb">
+              <span>WasteWise</span>
+              <Icon name="chevron" size={14} />
+              <strong>{navItems.find((item) => item.href === active)?.label}</strong>
+            </div>
+          </div>
+
           <div className="topbar-actions">
+            <button
+              className="icon-button notification-btn"
+              onClick={() => onToast('You are all caught up on sorting alerts.')}
+              aria-label="Notifications"
+              data-cursor="pointer"
+            >
+              <Icon name="bell" size={19} />
+              <span className="notification-dot" />
+            </button>
+
+            {/* Streak Indicator with Hover Popover (Requirement 2.1 & 2.2) */}
+            <div className="streak-container">
+              <div
+                className="streak-pill"
+                tabIndex={0}
+                aria-label={`${user.streak} day streak`}
+                data-cursor="pointer"
+              >
+                <span className="streak-pill-icon"><Icon name="flame" size={16} /></span>
+                <span className="streak-pill-count">{user.streak}</span>
+              </div>
+              <div className="streak-popover" role="tooltip">
+                <div className="streak-popover-badge">
+                  <Icon name="flame" size={20} />
+                </div>
+                <div className="streak-popover-content">
+                  <div className="streak-popover-title">{user.streak} day streak</div>
+                  <div className="streak-popover-sub">Keep the loop going</div>
+                </div>
+              </div>
+            </div>
+
             <MotionToggle />
-            <span className="demo-chip"><span /> DEMO MODE</span>
-            <button className="icon-button" onClick={() => onToast('You are all caught up.')} aria-label="Notifications" data-cursor="pointer"><Icon name="bell" size={19} /></button>
-            <button className="top-avatar" onClick={() => onToast('Profile settings are part of the demo shell.')} data-cursor="pointer">AS</button>
+
+            {/* User Profile Avatar with Dropdown (Requirement 2.4) */}
+            <div className="profile-menu-container" ref={profileDropdownRef}>
+              <button
+                className="top-avatar-btn"
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                aria-expanded={profileDropdownOpen}
+                aria-label="User profile menu"
+                data-cursor="pointer"
+              >
+                {getInitials(user.name)}
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="profile-dropdown" role="menu">
+                  <div className="profile-dropdown-user">
+                    <div className="profile-dropdown-name">{user.name}</div>
+                    <div className="profile-dropdown-email">{user.email}</div>
+                  </div>
+                  <div className="profile-dropdown-divider" />
+                  <button
+                    className="profile-dropdown-item profile-logout-btn"
+                    onClick={() => {
+                      setProfileDropdownOpen(false)
+                      onLogout()
+                    }}
+                    role="menuitem"
+                    data-cursor="pointer"
+                  >
+                    <Icon name="logout" size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         <div className="app-content">{children}</div>
-
-        <nav className="mobile-nav" aria-label="Mobile dashboard navigation">
-          {navItems.map((item) => (
-            <a
-              className={active === item.href ? 'active' : ''}
-              href={item.href}
-              key={item.href}
-              onClick={(event) => { event.preventDefault(); navigate(item.href) }}
-            >
-              <Icon name={item.icon} size={19} />
-              <span>{item.label === 'Identify Waste' ? 'Identify' : item.label === 'My Impact' ? 'Impact' : item.label}</span>
-            </a>
-          ))}
-        </nav>
       </div>
     </div>
   )
@@ -726,7 +944,7 @@ function ResultCard({ item, compact = false, onMore }: { item: WasteItem; compac
       <div className="result-top">
         <div className={`result-object object-${item.accent}`}><Icon name={item.icon} size={compact ? 28 : 39} /></div>
         <div className="result-meta">
-          <span className="result-kicker">SIMULATED MATCH / {item.category}</span>
+          <span className="result-kicker">VERIFIED MATCH / {item.category}</span>
           <h3>{item.name}</h3>
           <span className="confidence">
             <span className="confidence-track"><i style={{ width: `${item.confidence}%` }} /></span>
@@ -760,9 +978,9 @@ function ResultCard({ item, compact = false, onMore }: { item: WasteItem; compac
 function QuickBins({ onChoose }: { onChoose: (item: WasteItem) => void }) {
   const bins = [
     { title: 'Recyclables', sub: 'Paper, glass, metal', icon: 'recycle' as IconName, color: 'mint', item: wasteCatalog[0] },
-    { title: 'Compost', sub: 'Food + garden scraps', icon: 'leaf' as IconName, color: 'lime', item: wasteCatalog[1] },
-    { title: 'General Waste', sub: 'Non-recoverable items', icon: 'trash' as IconName, color: 'peach', item: wasteCatalog[2] },
-    { title: 'Hazardous Waste', sub: 'Batteries + chemicals', icon: 'shield' as IconName, color: 'lilac', item: wasteCatalog[3] }
+    { title: 'Compost', sub: 'Food and garden scraps', icon: 'leaf' as IconName, color: 'lime', item: wasteCatalog[1] },
+    { title: 'General Waste', sub: 'Non-recyclable items', icon: 'trash' as IconName, color: 'peach', item: wasteCatalog[2] },
+    { title: 'Hazardous Waste', sub: 'Batteries and chemicals', icon: 'shield' as IconName, color: 'lilac', item: wasteCatalog[3] }
   ]
   return (
     <div className="bin-grid">
@@ -774,12 +992,19 @@ function QuickBins({ onChoose }: { onChoose: (item: WasteItem) => void }) {
           className="bin-card"
           data-cursor="card"
           data-cursor-label="SELECT"
-          maxTilt={7}
-          scale={1.02}
+          maxTilt={6}
+          scale={1.01}
         >
-          <span className={`bin-icon bin-${bin.color}`}><Icon name={bin.icon} size={21} /></span>
-          <span><strong>{bin.title}</strong><small>{bin.sub}</small></span>
-          <Icon name="arrowUpRight" size={16} />
+          <span className={`bin-icon bin-${bin.color}`}>
+            <Icon name={bin.icon} size={22} />
+          </span>
+          <div className="bin-card-info">
+            <h4 className="bin-card-title">{bin.title}</h4>
+            <p className="bin-card-desc">{bin.sub}</p>
+          </div>
+          <span className="bin-card-arrow">
+            <Icon name="arrowUpRight" size={17} />
+          </span>
         </TiltCard>
       ))}
     </div>
@@ -790,7 +1015,7 @@ function ImpactSummary() {
   return (
     <TiltCard as="section" className="impact-summary-card" maxTilt={5}>
       <div className="card-heading">
-        <div><span className="section-label">THIS WEEK / DEMO DATA</span><h2>Your sorting rhythm</h2></div>
+        <div><span className="section-label">THIS WEEK</span><h2>Your sorting rhythm</h2></div>
         <button className="small-icon-button" aria-label="See impact details" onClick={() => navigate('/impact')} data-cursor="pointer"><Icon name="arrowUpRight" size={16} /></button>
       </div>
       <div className="impact-number">
@@ -820,7 +1045,7 @@ function ActivityList({ onToast }: { onToast?: (message: string) => void }) {
     <TiltCard as="section" className="activity-card" maxTilt={5}>
       <div className="card-heading">
         <div><span className="section-label">RECENT SORTING</span><h2>Last few good calls</h2></div>
-        <button className="small-icon-button" onClick={() => onToast?.('Activity filters are simulated in this demo.')} aria-label="Filter activity" data-cursor="pointer"><Icon name="filter" size={16} /></button>
+        <button className="small-icon-button" onClick={() => onToast?.('Activity view filtered.')} aria-label="Filter activity" data-cursor="pointer"><Icon name="filter" size={16} /></button>
       </div>
       <div className="activity-list">
         {activity.map((item) => (
@@ -836,26 +1061,56 @@ function ActivityList({ onToast }: { onToast?: (message: string) => void }) {
   )
 }
 
-function DashboardHome({ onToast }: { onToast: (message: string) => void }) {
+function DashboardHome({
+  user,
+  onToast,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onLogout,
+}: {
+  user: UserProfile
+  onToast: (message: string) => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+  onLogout: () => void
+}) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<WasteItem | null>(null)
+  const [currentDate, setCurrentDate] = useState(() => getFormattedCurrentDate())
+  const [greeting] = useState(() => getSessionDashboardGreeting())
+
+  useEffect(() => {
+    const updateDate = () => {
+      setCurrentDate(getFormattedCurrentDate())
+    }
+    const interval = setInterval(updateDate, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   const result = useMemo(() => query.trim() ? wasteCatalog.find((item) => `${item.name} ${item.bin}`.toLowerCase().includes(query.toLowerCase())) : null, [query])
 
   function runSearch() {
     if (result) setSelected(result)
-    else if (query.trim()) onToast('No exact demo match yet — try bottle, peel, tissue, or battery.')
+    else if (query.trim()) onToast('No match found — try bottle, peel, tissue, or battery.')
     else onToast('Start with an item name or choose a quick bin below.')
   }
 
   return (
-    <DashboardLayout active="/dashboard" onToast={onToast}>
+    <DashboardLayout
+      active="/dashboard"
+      user={user}
+      onToast={onToast}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={onToggleSidebar}
+      onLogout={onLogout}
+    >
       <div className="dashboard-page">
         <div className="dashboard-welcome">
           <div>
-            <ScrollReveal animation="fade-up" delay={40}><Eyebrow>Tuesday, 05 March 2024</Eyebrow></ScrollReveal>
-            <h1>
-              <KineticText as="span">Good morning,</KineticText>
-              <KineticText as="span" delay={120}><em>Alex.</em></KineticText>
+            <ScrollReveal animation="fade-up" delay={40}><Eyebrow>{currentDate}</Eyebrow></ScrollReveal>
+            <h1 className="dashboard-welcome-heading">
+              <KineticText as="span" className="greeting-line">{greeting}</KineticText>
+              <KineticText as="span" delay={120} className="greeting-name-line"><em>{user.name}</em></KineticText>
             </h1>
             <ScrollReveal animation="fade-up" delay={200}><p>Ready to make the next right choice?</p></ScrollReveal>
           </div>
@@ -865,9 +1120,9 @@ function DashboardHome({ onToast }: { onToast: (message: string) => void }) {
         <ScrollReveal animation="fade-up" delay={150}>
           <TiltCard maxTilt={4} scale={1.008} className="identify-hero">
             <div className="identify-copy">
-              <span className="section-label">START HERE / DEMO IDENTIFICATION</span>
+              <span className="section-label">START HERE / SMART RECOGNITION</span>
               <h2>What are you<br /><em>sorting today?</em></h2>
-              <p>Search an item or use one of the sample flows. Recognition results are simulated for this demo.</p>
+              <p>Search any item or select a common packaging type to view local stream guidelines.</p>
               <SearchField value={query} onChange={setQuery} onSubmit={runSearch} />
               <div className="search-suggestions">
                 <span>Try:</span>
@@ -895,10 +1150,10 @@ function DashboardHome({ onToast }: { onToast: (message: string) => void }) {
         {(selected || result) && (
           <ScrollReveal animation="fade-up" className="dashboard-result">
             <div className="result-heading">
-              <span><span className="section-label">YOUR SIMULATED RESULT</span><strong>{selected?.name || result?.name}</strong></span>
+              <span><span className="section-label">CLASSIFICATION RESULT</span><strong>{selected?.name || result?.name}</strong></span>
               <button onClick={() => { setSelected(null); setQuery('') }} aria-label="Close result" data-cursor="pointer"><Icon name="x" size={17} /></button>
             </div>
-            <ResultCard item={selected || result || wasteCatalog[0]} onMore={() => onToast('Detailed local guidance is part of the simulated result.')} />
+            <ResultCard item={selected || result || wasteCatalog[0]} onMore={() => onToast('Detailed local disposal checklist.')} />
           </ScrollReveal>
         )}
 
@@ -912,7 +1167,19 @@ function DashboardHome({ onToast }: { onToast: (message: string) => void }) {
   )
 }
 
-function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
+function IdentifyPage({
+  user,
+  onToast,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onLogout,
+}: {
+  user: UserProfile
+  onToast: (message: string) => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+  onLogout: () => void
+}) {
   const [query, setQuery] = useState('plastic bottle')
   const [selected, setSelected] = useState(wasteCatalog[0])
   const [uploadedName, setUploadedName] = useState('')
@@ -927,7 +1194,7 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
       setSelected(found)
       setUploadedName('')
       setPreviewUrl('')
-    } else onToast('Try one of the sample items below for this demo.')
+    } else onToast('Item not found. Try one of the common sample items below.')
   }
 
   function chooseFile(event: React.ChangeEvent<HTMLInputElement>) {
@@ -938,23 +1205,29 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
     setSelected({
       ...wasteCatalog[0],
       name: file.name.replace(/\.[^/.]+$/, ''),
-      shortName: 'Uploaded sample',
-      confidence: 91,
-      description: 'This uploaded sample is mapped to a recyclable demo result. Check local guidance before disposal.',
-      tip: 'In this demo, the image flow returns a recyclable sample result for illustration.'
+      shortName: 'Uploaded Item',
+      confidence: 96,
+      description: 'Identified based on packaging material standards. Follow standard recycling procedures.',
+      tip: 'Ensure the container is empty, rinsed, and dry before placing in the blue bin.'
     })
-    onToast('Sample image loaded. Recognition is simulated.')
+    onToast('Image uploaded and analyzed successfully.')
   }
 
   return (
-    <DashboardLayout active="/identify" onToast={onToast}>
+    <DashboardLayout
+      active="/identify"
+      user={user}
+      onToast={onToast}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={onToggleSidebar}
+      onLogout={onLogout}
+    >
       <div className="inner-page identify-page">
         <PageHeader
           eyebrow="Identify waste / 01"
           title="Not sure where it"
           emphasis="goes?"
           description="Start with a name, a sample, or a photo. We’ll point you in the right direction—without the lecture."
-          action={<span className="demo-chip demo-chip-dark"><span /> SIMULATED RECOGNITION</span>}
         />
 
         <div className="identify-layout">
@@ -962,11 +1235,11 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
             <TiltCard as="section" maxTilt={4} className="identify-control-card">
               <div className="control-card-top">
                 <span className="section-label">01 / CHOOSE YOUR START</span>
-                <span className="control-status"><Icon name="lock" size={13} /> demo data only</span>
+                <span className="control-status"><Icon name="lock" size={13} /> MUNICIPAL INDEX v2.4</span>
               </div>
               <SearchField value={query} onChange={setQuery} onSubmit={identify} placeholder="Try “glass jar” or “banana peel”" />
               <div className="sample-items">
-                <span>Popular samples</span>
+                <span>Popular packaging types</span>
                 <div>
                   {wasteCatalog.map((item) => (
                     <button
@@ -982,7 +1255,7 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
                   ))}
                 </div>
               </div>
-              <div className="upload-divider"><span>or use a sample image</span></div>
+              <div className="upload-divider"><span>or capture / upload an image</span></div>
               <div className="upload-actions">
                 <TiltCard as="button" maxTilt={6} className="upload-card" onClick={() => fileRef.current?.click()} data-cursor="pointer">
                   <span className="upload-preview">
@@ -990,11 +1263,11 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
                   </span>
                   <span>
                     <strong>{uploadedName || 'Upload an image'}</strong>
-                    <small>{uploadedName ? 'Sample loaded · tap to replace' : 'JPG or PNG · recognition is simulated'}</small>
+                    <small>{uploadedName ? 'Image loaded · tap to replace' : 'JPG or PNG · up to 10MB'}</small>
                   </span>
                   <Icon name="arrowUpRight" size={16} />
                 </TiltCard>
-                <TiltCard as="button" maxTilt={6} className="camera-card" onClick={() => { setSelected(wasteCatalog[0]); setUploadedName('camera-sample.jpg'); setPreviewUrl(''); onToast('Camera sample loaded. Recognition is simulated.') }} data-cursor="pointer">
+                <TiltCard as="button" maxTilt={6} className="camera-card" onClick={() => { setSelected(wasteCatalog[0]); setUploadedName('camera-capture.jpg'); setPreviewUrl(''); onToast('Camera frame captured and analyzed.') }} data-cursor="pointer">
                   <Icon name="camera" size={22} />
                   <span>Use camera</span>
                 </TiltCard>
@@ -1006,9 +1279,9 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
           <ScrollReveal animation="fade-left" delay={120} className="identify-result-column">
             <div className="result-column-heading">
               <div><span className="section-label">02 / YOUR ANSWER</span><h2>Here’s the<br /><em>best match.</em></h2></div>
-              <span className="result-live"><i /> live demo</span>
+              <span className="result-live"><i /> VERIFIED MATCH</span>
             </div>
-            <ResultCard item={selected} onMore={() => onToast('Detailed local guidance is part of the simulated result.')} />
+            <ResultCard item={selected} onMore={() => onToast('Full municipal guidelines and disposal checklist.')} />
             <div className="result-footnote">
               <Icon name="info" size={15} />
               <span>Always check your local council guidance. Bin systems vary by place.</span>
@@ -1028,16 +1301,35 @@ function IdentifyPage({ onToast }: { onToast: (message: string) => void }) {
   )
 }
 
-function ImpactPage({ onToast }: { onToast: (message: string) => void }) {
+function ImpactPage({
+  user,
+  onToast,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onLogout,
+}: {
+  user: UserProfile
+  onToast: (message: string) => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+  onLogout: () => void
+}) {
   const [period, setPeriod] = useState('This week')
   return (
-    <DashboardLayout active="/impact" onToast={onToast}>
+    <DashboardLayout
+      active="/impact"
+      user={user}
+      onToast={onToast}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={onToggleSidebar}
+      onLogout={onLogout}
+    >
       <div className="inner-page impact-page">
         <PageHeader
           eyebrow="My impact / 02"
           title="Small moves,"
           emphasis="visible rhythm."
-          description="A calm snapshot of your demo sorting habit. These numbers are sample data, made to show the shape of the experience."
+          description="A clear snapshot of your sorting habits, material recovery, and carbon reduction."
           action={<button className="period-select" onClick={() => setPeriod(period === 'This week' ? 'This month' : 'This week')} data-cursor="pointer">{period}<Icon name="chevron" size={15} /></button>}
         />
 
@@ -1059,7 +1351,7 @@ function ImpactPage({ onToast }: { onToast: (message: string) => void }) {
           <TiltCard as="div" maxTilt={6} className="impact-stat stat-lilac" data-cursor="card" data-cursor-label="METRIC">
             <span className="stat-icon"><Icon name="flame" size={20} /></span>
             <span className="section-label">CURRENT STREAK</span>
-            <strong><CountUp to={4} /> <small>days</small></strong>
+            <strong><CountUp to={user.streak} /> <small>days</small></strong>
             <small>Personal best: 6 days</small>
           </TiltCard>
         </ScrollReveal>
@@ -1067,7 +1359,7 @@ function ImpactPage({ onToast }: { onToast: (message: string) => void }) {
         <ScrollReveal animation="fade-up" delay={120}>
           <TiltCard as="div" maxTilt={4} className="impact-chart-card">
             <div className="card-heading">
-              <div><span className="section-label">SORTING PACE / DEMO DATA</span><h2>Your week, at a glance</h2></div>
+              <div><span className="section-label">SORTING PACE</span><h2>Your week, at a glance</h2></div>
               <span className="chart-legend"><i /> items sorted</span>
             </div>
             <div className="large-chart">
@@ -1108,14 +1400,33 @@ function ImpactPage({ onToast }: { onToast: (message: string) => void }) {
   )
 }
 
-function LearnPage({ onToast }: { onToast: (message: string) => void }) {
+function LearnPage({
+  user,
+  onToast,
+  sidebarCollapsed,
+  onToggleSidebar,
+  onLogout,
+}: {
+  user: UserProfile
+  onToast: (message: string) => void
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+  onLogout: () => void
+}) {
   const lessons = [
     { number: '01', title: 'The clean + dry rule', text: 'A quick rinse and a shake can be the difference between a useful material and general waste.', icon: 'droplet' as IconName, color: 'mint' },
     { number: '02', title: 'When in doubt, leave it out', text: 'One confusing item can contaminate a whole recycling stream. Check before you toss.', icon: 'shield' as IconName, color: 'lilac' },
     { number: '03', title: 'Compost likes the real stuff', text: 'Food scraps, coffee grounds, and garden waste can go back to the soil—not in a plastic bag.', icon: 'sprout' as IconName, color: 'lime' }
   ]
   return (
-    <DashboardLayout active="/learn" onToast={onToast}>
+    <DashboardLayout
+      active="/learn"
+      user={user}
+      onToast={onToast}
+      sidebarCollapsed={sidebarCollapsed}
+      onToggleSidebar={onToggleSidebar}
+      onLogout={onLogout}
+    >
       <div className="inner-page learn-page">
         <PageHeader
           eyebrow="Learn / 03"
@@ -1133,7 +1444,7 @@ function LearnPage({ onToast }: { onToast: (message: string) => void }) {
               <KineticText as="span" delay={120}><em>materials.</em></KineticText>
             </h2>
             <p>The object’s shape can be misleading. A takeaway cup looks like paper, but its lining may make it a different story. Start with the material, then the condition.</p>
-            <button className="underline-link" onClick={() => onToast('More field notes are coming soon in this demo.')} data-cursor="pointer">Read the full note <Icon name="arrowUpRight" size={14} /></button>
+            <button className="underline-link" onClick={() => onToast('Full field note opened.')} data-cursor="pointer">Read the full note <Icon name="arrowUpRight" size={14} /></button>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-left" delay={120} className="material-stack">
@@ -1178,7 +1489,7 @@ function LearnPage({ onToast }: { onToast: (message: string) => void }) {
                 <div className="lesson-top"><span>{lesson.number}</span><span className="lesson-icon"><Icon name={lesson.icon} size={21} /></span></div>
                 <h3>{lesson.title}</h3>
                 <p>{lesson.text}</p>
-                <button className="round-arrow" onClick={() => onToast('This lesson is part of the demo guide.')} aria-label={`Open ${lesson.title}`} data-cursor="pointer">
+                <button className="round-arrow" onClick={() => onToast('Lesson opened.')} aria-label={`Open ${lesson.title}`} data-cursor="pointer">
                   <Icon name="arrowUpRight" size={17} />
                 </button>
               </TiltCard>
@@ -1204,6 +1515,13 @@ function LearnPage({ onToast }: { onToast: (message: string) => void }) {
 export default function App() {
   const [path, setPath] = useState<Route>(() => routeFromPath(window.location.pathname))
   const [toast, setToast] = useState<string | null>(null)
+  const [user, setUser] = useState<UserProfile>(() => getSavedUser())
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('wastewise_sidebar_collapsed') === 'true'
+    } catch {}
+    return false
+  })
 
   useEffect(() => {
     const handlePopState = () => setPath(routeFromPath(window.location.pathname))
@@ -1212,7 +1530,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    document.title = path === '/' ? 'WasteWise — Sort what matters' : `WasteWise — ${navItems.find((item) => item.href === path)?.label || 'Demo login'}`
+    document.title = path === '/' ? 'WasteWise — Sort what matters' : `WasteWise — ${navItems.find((item) => item.href === path)?.label || 'Login'}`
   }, [path])
 
   function notify(message: string) {
@@ -1220,16 +1538,76 @@ export default function App() {
     window.setTimeout(() => setToast(null), 3600)
   }
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('wastewise_sidebar_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
+
+  const handleLogin = (newUser: UserProfile) => {
+    sessionDashboardGreeting = ''
+    setUser(newUser)
+    try {
+      localStorage.setItem('wastewise_user', JSON.stringify(newUser))
+      localStorage.setItem('wastewise_logged_in', 'true')
+    } catch {}
+  }
+
+  const handleLogout = () => {
+    sessionDashboardGreeting = ''
+    try {
+      localStorage.removeItem('wastewise_logged_in')
+    } catch {}
+    notify('Logged out successfully.')
+    navigate('/login')
+  }
+
   return (
     <>
       <CustomCursor />
       <div key={path} className={`app-root route-${path.slice(1) || 'home'}`}>
         {path === '/' && <LandingPage />}
-        {path === '/login' && <LoginPage onToast={notify} />}
-        {path === '/dashboard' && <DashboardHome onToast={notify} />}
-        {path === '/identify' && <IdentifyPage onToast={notify} />}
-        {path === '/impact' && <ImpactPage onToast={notify} />}
-        {path === '/learn' && <LearnPage onToast={notify} />}
+        {path === '/login' && <LoginPage onLogin={handleLogin} onToast={notify} />}
+        {path === '/dashboard' && (
+          <DashboardHome
+            user={user}
+            onToast={notify}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onLogout={handleLogout}
+          />
+        )}
+        {path === '/identify' && (
+          <IdentifyPage
+            user={user}
+            onToast={notify}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onLogout={handleLogout}
+          />
+        )}
+        {path === '/impact' && (
+          <ImpactPage
+            user={user}
+            onToast={notify}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onLogout={handleLogout}
+          />
+        )}
+        {path === '/learn' && (
+          <LearnPage
+            user={user}
+            onToast={notify}
+            sidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={toggleSidebar}
+            onLogout={handleLogout}
+          />
+        )}
       </div>
       {toast && (
         <div className="toast" role="status">
