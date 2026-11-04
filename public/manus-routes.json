@@ -1,0 +1,10 @@
+{
+  "routes": [
+    { "path": "/", "title": "WasteWise — Sort what matters" },
+    { "path": "/login", "title": "WasteWise — Demo login" },
+    { "path": "/dashboard", "title": "WasteWise — Dashboard" },
+    { "path": "/identify", "title": "WasteWise — Identify waste" },
+    { "path": "/impact", "title": "WasteWise — My impact" },
+    { "path": "/learn", "title": "WasteWise — Learn" }
+  ]
+}
