@@ -7,6 +7,7 @@ import { ScrollReveal } from './components/ScrollReveal'
 import { Marquee } from './components/Marquee'
 import { CountUp } from './components/CountUp'
 import { MotionToggle } from './components/MotionToggle'
+import { TypewriterText } from './components/TypewriterText'
 
 type Route = '/' | '/login' | '/dashboard' | '/identify' | '/impact' | '/learn'
 type IconName =
@@ -400,7 +401,6 @@ function LandingPage() {
             <span>MODEL v2.4 ONLINE</span>
           </div>
           <MotionToggle />
-          <button className="text-link" onClick={() => navigate('/login')} data-cursor="pointer">Log in <Icon name="arrowUpRight" size={15} /></button>
           <Button variant="lime" onClick={() => navigate('/login')}>Get started <Icon name="arrowUpRight" size={16} /></Button>
         </div>
       </header>
@@ -414,24 +414,9 @@ function LandingPage() {
           <h1 className="hero-title">
             <span className="hero-title-static">Sort what</span>
             <span className="hero-typewriter-line" aria-label="Sort what matters.">
-              <span className="typewriter-word word-1" aria-hidden="true">
-                <span className="typewriter-text">matters.</span>
-              </span>
-              <span className="typewriter-word word-2" aria-hidden="true">
-                <span className="typewriter-text">counts.</span>
-              </span>
-              <span className="typewriter-word word-3" aria-hidden="true">
-                <span className="typewriter-text">lasts.</span>
-              </span>
-              <span className="typewriter-word word-4" aria-hidden="true">
-                <span className="typewriter-text">belongs.</span>
-              </span>
-              <span className="typewriter-word word-5" aria-hidden="true">
-                <span className="typewriter-text">inspires.</span>
-              </span>
-              <span className="typewriter-word word-6" aria-hidden="true">
-                <span className="typewriter-text">transforms.</span>
-              </span>
+              <TypewriterText
+                words={['matters.', 'counts.', 'lasts.', 'belongs.', 'inspires.', 'transforms.']}
+              />
             </span>
           </h1>
 
@@ -637,9 +622,16 @@ function LoginPage({ onLogin, onToast }: { onLogin: (profile: UserProfile) => vo
           <ScrollReveal animation="fade-up" delay={50}>
             <Eyebrow light>Intelligent Waste Management</Eyebrow>
           </ScrollReveal>
-          <h1>
-            <KineticText as="span">Make room</KineticText>
-            <KineticText as="span" delay={120}>for <em>better.</em></KineticText>
+          <h1 className="login-heading">
+            <span className="login-heading-static">Make room</span>
+            <span className="login-typewriter-row">
+              <span className="login-heading-for">for&nbsp;</span>
+              <span className="login-typewriter-line" aria-label="Make room for better.">
+                <TypewriterText
+                  words={['better.', 'change.', 'nature.', 'tomorrow.', 'impact.']}
+                />
+              </span>
+            </span>
           </h1>
           <ScrollReveal animation="fade-up" delay={200}>
             <p>Sign in to your dashboard to track sorting, prevent contamination, and keep circular materials moving.</p>
@@ -652,10 +644,7 @@ function LoginPage({ onLogin, onToast }: { onLogin: (profile: UserProfile) => vo
       <div className="login-panel">
         <div className="login-panel-top">
           <button className="back-link" onClick={() => navigate('/')} data-cursor="pointer"><Icon name="arrowRight" size={17} /> Back to home</button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <MotionToggle />
-            <span>New here? <button className="inline-action" onClick={() => onToast('Account registration is currently in early access.')} data-cursor="pointer">Create account</button></span>
-          </div>
+          <MotionToggle />
         </div>
         <ScrollReveal animation="fade-up" delay={100} className="login-form-wrap">
           <Eyebrow>Welcome Back</Eyebrow>
